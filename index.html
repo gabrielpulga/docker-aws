@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width-device-width, initial-scale-1.0" />
+
+    <title>Color Picker</title>
+    <style>
+
+body {
+    font-family: "Helvetica Neue", Helvetica;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+.picker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: 720px;
+    height: 180px;
+}
+
+#display {
+    display: grid;
+    place-items: center;
+    height: 100px;
+    background: #425779;
+    margin-top: 30px;
+    border: 1px solid #000;
+
+    font-family: "Helvetica Neue", Helvetica;
+    font-size: 1.8rem;
+    color: azure
+}
+
+input {
+    display: block;
+    width: 100%;
+}
+
+footer {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    right: 0;
+    margin: auto;
+    width: 360px;
+    height: 180px;
+}
+        </style>
+
+</head>
+
+<body>
+    <div class="picker">
+        Red <input type="range" min="0" max="255" step="1" id="red" value="66">
+        Green <input type="range" min="0" max="255" step="1" id="green" value="87">
+        Blue <input type="range" min="0" max="255" step="1" id="blue" value="121">
+
+        <div id="display">RGB (red, green, blue)</div>
+    </div>
+
+    <h1>RGB Color Picker</h1>
+    <h2>RGB color space or RGB color system, constructs all the colors from the combination of the Red, Green and Blue
+        colors.</h2>
+    <h3> The red, green and blue use 8 bits each, which have integer values from 0 to 255. This makes
+        256*256*256=16777216 possible colors.
+        Each pixel in the LED monitor displays colors this way, by combination of red, green and blue LEDs (light
+        emitting diodes).</h3>
+
+        <script>
+            var input = document.querySelectorAll("input");
+for (var i = 0; i < input.length; i++) {
+    input[i].addEventListener("input",
+
+        function () {
+            var
+                red = document.getElementById("red").value,
+                green = document.getElementById("green").value,
+                blue = document.getElementById("blue").value;
+
+            var display = document.getElementById("display");
+            display.style.background = "rgb(" + red + ", " + green + ", " + blue + ")";
+            display.innerHTML = "RGB (" + red + ", " + green + ", " + blue + ")";
+        }
+    );
+}
+            </script>
+
+    <footer>
+        <p>
+            <h3>Code from this project is available on my <a href="https://github.com/gabrielpulga"
+                    target="_blank">GitHub</a> page.</h3>
+        </p>
+
+    </footer>
+</body>
+
+</html>
