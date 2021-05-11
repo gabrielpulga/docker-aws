@@ -92,7 +92,9 @@ Para enviar uma imagem docker a um repositório do ECR na AWS, devemos ter um am
 Ou seja, a primeira coisa que devemos fazer é criar o repositório para armazenar nossas imagens Docker.
 
 **Como criar um repositório de imagens ECR**
+
 Um repositório é o local em que armazena as imagens do Docker ou da Open Container Initiative (OCI) no Amazon ECR.
+
 Sempre que enviar ou receber uma imagem do Amazon ECR, especifique o repositório e o local do registro, que informa para onde enviar a imagem ou de onde retirá-la.
 
 - Abra o console do Amazon ECR em https://console.aws.amazon.com/ecr/.
@@ -108,6 +110,7 @@ Caso esteja usando um usuário root, esse acesso é garantido por padrão por pe
 A melhor prática é criar um usuário IAM para acessar o serviço e conceder a este usuário as permissões necessárias para usar o ECR.
 
 **Criando um usuário IAM**
+
 Entre no console do IAM como o proprietário da conta escolhendo usuário raiz e inserindo o endereço de e-mail de sua da conta AWS. Na próxima página, insira sua senha.
 
 - No painel de navegação, escolha Usuários e depois Adicionar usuário.
@@ -122,7 +125,9 @@ Você pode usar esse mesmo processo para criar mais grupos e usuários e concede
 Ao ter em mãos o ambiente e acesso administrativo aos repositórios da ECR, é possível fazer o push de qualquer imagem do docker através de uma pipeline ou pelo console através de linhas de comando.
 
 **Criando um ECS Cluster**
+
 O Amazon Elastic Container Service (Amazon ECS) é o serviço da Amazon Web Services que você usa para executar aplicativos do Docker em um cluster escalável.
+
 O assistente de primeira execução do Amazon ECS orientará você durante a criação de um cluster e a execução de um aplicativo web de exemplo através do seguinte passo-a-passo.
 
 - Configure sua primeira execução com o Amazon ECS.
@@ -199,4 +204,3 @@ Ao finalizar a pipeline, nossa integração entre o repositório e a nuvem está
 Você pode usar o console do Amazon EC2 para visualizar os endereços IPv4 privados, os endereços IPv4 públicos e os endereços IP elásticos das instâncias.
 
 Você também pode determinar os endereços IPv4 públicos e privados da instância usando os metadados da instância.
-
