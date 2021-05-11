@@ -83,3 +83,120 @@ $ docker run -d -p 80:80 html-server:v1
 ```
 
 Podemos testar nosso deploy acessando http://localhost e ver nosso arquivo index.html sendo mostrado.
+
+# Parte 2 — Construindo a Infraestrutura da Nuvem (Usuário IAM, Repositório ECR, ECS Cluster, Task Definitions e Services)
+Nosso workflow vai consistir de construir e enviar uma imagem de nosso contêiner ao ECR e fazer o deploy de uma nova task definition para o ECS quando uma release da aplicação for criada.
+
+Para enviar uma imagem docker a um repositório do ECR na AWS, devemos ter um ambiente configurado e permissão para acessar seus recursos.
+
+Ou seja, a primeira coisa que devemos fazer é criar o repositório para armazenar nossas imagens Docker.
+
+**Como criar um repositório de imagens ECR**
+Um repositório é o local em que armazena as imagens do Docker ou da Open Container Initiative (OCI) no Amazon ECR.
+Sempre que enviar ou receber uma imagem do Amazon ECR, especifique o repositório e o local do registro, que informa para onde enviar a imagem ou de onde retirá-la.
+
+- Abra o console do Amazon ECR em https://console.aws.amazon.com/ecr/.
+- Escolha Get Started.
+- Em Tag immutability (Imutabilidade de tag), escolha a configuração de mutabilidade de tag para o repositório. Repositórios configurados com tags imutáveis - impedirão que as tags de imagens sejam substituídas.
+- Em Scan on push (Verificar ao enviar), escolha a configuração de verificação de imagem para o repositório. Os repositórios configurados para verificar ao enviar iniciarão uma verificação de imagem sempre que uma imagem for enviada, caso contrário, as verificações de imagem deverão ser iniciadas manualmente. Para obter mais informações, consulte Verificação de imagens.
+- Escolha Create repository (Criar repositório).
+
+Após criar o repositório, devemos verificar se nossa conta possui acesso.
+
+Caso esteja usando um usuário root, esse acesso é garantido por padrão por pertencer à lista de políticas AdministratorAccess, mas isso não é recomendado.
+
+A melhor prática é criar um usuário IAM para acessar o serviço e conceder a este usuário as permissões necessárias para usar o ECR.
+
+**Criando um usuário IAM**
+Entre no console do IAM como o proprietário da conta escolhendo usuário raiz e inserindo o endereço de e-mail de sua da conta AWS. Na próxima página, insira sua senha.
+
+- No painel de navegação, escolha Usuários e depois Adicionar usuário.
+- Em Set permissions (Conceder permissões), escolha Add user to group (Adicionar usuário ao grupo).
+- Escolha Create group (Criar grupo).
+- Escolha Filter policies (Filtrar políticas) para filtrar o conteúdo de tabelas.
+- Na lista de políticas, marque a caixa de seleção que se refere ao ECR. A seguir escolha Criar grupo.
+- Quando você estiver pronto para continuar, selecione Criar usuário.
+
+Você pode usar esse mesmo processo para criar mais grupos e usuários e conceder aos seus usuários acesso aos recursos de sua conta da AWS.
+
+Ao ter em mãos o ambiente e acesso administrativo aos repositórios da ECR, é possível fazer o push de qualquer imagem do docker através de uma pipeline ou pelo console através de linhas de comando.
+
+**Criando um ECS Cluster**
+O Amazon Elastic Container Service (Amazon ECS) é o serviço da Amazon Web Services que você usa para executar aplicativos do Docker em um cluster escalável.
+O assistente de primeira execução do Amazon ECS orientará você durante a criação de um cluster e a execução de um aplicativo web de exemplo através do seguinte passo-a-passo.
+
+- Configure sua primeira execução com o Amazon ECS.
+- Crie uma definição de tarefa.
+- Configure seu serviço.
+- Configure seu cluster.
+
+**Parte 3 — Implementando uma Pipeline CI/CD com o Github Actions**
+Nesse projeto, vamos utilizar de um build e deploy automatizado através de uma pipeline CI/CD criada através do Github Actions.
+O seguinte template pode ser utilizado como modelo base para fazer o deploy de uma aplicação ao ECR e ECS.
+
+```
+
+on:
+  release:
+    types: [created]
+name: Deploy to Amazon ECS
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+- name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
+- name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+- name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: my-ecr-repo
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+- name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: sample-app
+        image: ${{ steps.build-image.outputs.image }}
+- name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: sample-app-service
+        cluster: default
+        wait-for-service-stability: true
+
+```
+
+Para uso do template, as seguintes mudanças devem ser feitas para o encaixe da aplicação :
+
+- Substituir o valor de ECR_REPOSITORY no fluxo de trabalho pelo nome do seu repositório.
+- Substituir o valor de aws-region no fluxo de trabalho abaixo pela região do seu repositório.
+- Substituir os valores de service e cluster no fluxo de trabalho pelos seus nomes de serviço e cluster.
+- Substituir o valor de task-definition no fluxo de trabalho pelo nome do seu arquivo JSON presente no repositório.
+- Substituir o valor de container-name no fluxo de trabalho pelo nome do contêiner.
+- Armazenar uma chave de acesso de usuário IAM nos segredos do GitHub como variáveis chamadas AWS_ACCESS_KEY_ID e AWS_SECRET_ACCESS_KEY.
+
+# Parte 4 — Acesso à aplicação através de um IP Público disponibilizado pela AWS
+Ao finalizar a pipeline, nossa integração entre o repositório e a nuvem está completa. Sendo assim, essa última etapa é apenas a verificação do website através de um endereço de IP público.
+
+Você pode usar o console do Amazon EC2 para visualizar os endereços IPv4 privados, os endereços IPv4 públicos e os endereços IP elásticos das instâncias.
+
+Você também pode determinar os endereços IPv4 públicos e privados da instância usando os metadados da instância.
+
